@@ -7,7 +7,16 @@ arduino_port = "/dev/ttyUSB0"  # Change this to your Arduino port
 baud_rate = 9600
 
 # Initialize serial connection
-ser = serial.Serial(arduino_port, baud_rate, timeout=1)
+connected = False
+while connected != True:
+    try:    
+        print("Trying to listen to serial")
+        ser = serial.Serial(arduino_port, baud_rate, timeout=1)
+        connected = True
+               
+    except Exception as e:
+       print("An error: " + str(e) + "has occurred")
+       time.sleep(5)
 
 # Initialize pygame mixer
 pygame.mixer.init()
