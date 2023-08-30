@@ -3,6 +3,7 @@ pins:
 CS = 10
 CLK = 13
 DIN = 11
+SOUND PIN =A0
 */
 
 #include <MD_Parola.h>
@@ -31,6 +32,9 @@ const uint8_t TMC_SmileBL[] = {8, 198, 198, 198, 102, 48, 56, 15, 7};
 //Talk mouth open
 const uint8_t TMO_SmileBR[] = {8, 7, 15, 56, 48, 96, 198, 207, 207,};
 const uint8_t TMO_SmileBL[] = {8, 207, 207, 198, 96, 48, 56, 15, 7,};
+// Speech bubble
+const uint8_t SB_LEFT[] = {8, 0, 78, 127, 123, 49, 17, 17, 17,};
+const uint8_t SB_RIGHT[] = {8, 17, 17, 17, 27, 31, 14, 0, 0, };
 
 // Create structures
 typedef struct
@@ -39,17 +43,29 @@ typedef struct
   const char *msg;  // message to display
 } msgDef_t;
 
-//Create Animation
-msgDef_t Animation[] = // Each line is a "frame" of animation
- {
-  {0, "!#        &/"},
-  {0, "!#        =?"}
+//Create Animation and default frame
+msgDef_t IdleFace[] = 
+{
+  {0, "!#        $%"}
 };
 
+msgDef_t Animation[] = // Each line is a "frame" of animation
+ {
+  {0, "!#+-&/"},
+  {0, "!#+-=?"}
+};
 
 #define MAX_STRINGS  (sizeof(Animation)/sizeof(Animation[0]))
 
+// General variables
+
+int x = 0;
+const int soundSensorPin = A0;  // Analog pin to which the sensor is connected
+bool SoundActivity = false;
+
+
 void setup() {
+  Serial.begin(9600);
   myDisplay.begin();
 
   //Add characters to be used in animation
@@ -65,22 +81,51 @@ void setup() {
   myDisplay.addChar('=', TMO_SmileBR);
   myDisplay.addChar('?', TMO_SmileBL);
   
+  //Text bubble
+  myDisplay.addChar('+', SB_LEFT);
+  myDisplay.addChar('-', SB_RIGHT);
+  
   myDisplay.setIntensity(4);
 
-  myDisplay.setCharSpacing(Animation[0].spacing);
-    
-  myDisplay.displayText(Animation[0].msg, PA_LEFT, 200, 200, PA_PRINT);
-}
+  
+  if (SoundActivity == true) {
+    myDisplay.setCharSpacing(Animation[0].spacing);
+    myDisplay.displayText(Animation[0].msg, PA_LEFT, 200, 200, PA_PRINT);
+  }
+  else{
+    myDisplay.setCharSpacing(IdleFace[0].spacing);
+    myDisplay.displayText(IdleFace[0].msg, PA_LEFT, 200, 200, PA_PRINT);
+  };
+  //myDisplay.displayText(Animation[0].msg, PA_LEFT, 200, 200, PA_PRINT);
+};
 
 void loop() {
   static uint8_t	n = 1;
+  int sensorValue = analogRead(soundSensorPin);
+  ///Serial.println("Activity");
+  Serial.println(sensorValue);
+  if (sensorValue > 100) {
+    //Serial.println("Activity");
+    //Serial.println(sensorValue);
+    SoundActivity = true;
+  }
+  else{
+    SoundActivity = false;
+  }
 
   if (myDisplay.displayAnimate()) {
-    myDisplay.setTextBuffer(Animation[n].msg);
-    myDisplay.setCharSpacing(Animation[n].spacing);
+    if (SoundActivity == true){
+      myDisplay.setTextBuffer(Animation[n].msg);
+      myDisplay.setCharSpacing(Animation[n].spacing);
+    }
+    else {
+      myDisplay.setTextBuffer(IdleFace[n].msg);
+      myDisplay.setCharSpacing(IdleFace[n].spacing);
+
+    };
     myDisplay.displayReset();
     n = (n + 1) % MAX_STRINGS;
+    
   };
- 
 
 }
