@@ -22,7 +22,7 @@ while connected != True:
 pygame.mixer.init()
 
 # Load the audio file
-audio_file = "/home/pi/Desktop/Ring01.wav"
+audio_file = "/home/pi/holohell/sound_files/Holohell_intro(hello).wav"
 sound = pygame.mixer.Sound(audio_file)
 
 try:
