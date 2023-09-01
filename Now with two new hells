@@ -1,0 +1,164 @@
+//Libraries
+#include <MD_Parola.h>
+#include <MD_MAX72xx.h>
+#include <SPI.h>
+
+//Hardware SPI Arduino UNO
+// CLK Pin  > 13 SCK
+// Data Pin > 11 MOSI
+
+// Defines
+#define HARDWARE_TYPE MD_MAX72XX::FC16_HW //What device
+#define MAX_DEVICES 8 //How many 8x8 you have
+#define CS_PIN 10 // What pin CS is in the Arduino
+#define  delay_t  50  // in milliseconds
+
+// Hardware Type
+//MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
+MD_MAX72XX mx = MD_MAX72XX(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
+MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
+
+#define MAX_STRINGS  (sizeof(Animation)/sizeof(Animation[0]))
+
+// General variables
+int x = 0;
+const int soundSensorPin = A0;  // Analog pin to which the sensor is connected
+bool SoundActivity = false;
+
+
+// !!!!!!!!!!!!!!!!!!!!! Custom Chars. BYTE style !!!!!!!!!!!!!!!!!!!!!!!
+byte Bdefault_SmileTR[8] = {0x07,0x0F,0x38,0x30,0x66,0xC6,0xC6,0xC0};
+byte Bdefault_SmileTL[8] = {0xE0,0xF0,0x1C,0x0C,0x66,0x63,0x63,0x03};
+byte Bdefault_SmileBR[8] = {0xD8,0xDC,0xCF,0x67,0x30,0x38,0x0F,0x07};
+byte Bdefault_SmileBL[8] = {0x1B,0x3B,0xF3,0xE6,0x0C,0x1C,0xF0,0xE0};
+byte Bdefault_Blank[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+//!!!!!!!!!!!!!!!!!!!! Custom Char. Const uint style. !!!!!!!!!!!!!!!!!!!!!
+
+//default smile
+const uint8_t default_SmileTR[] = {8, 224, 240, 28, 12, 6, 115, 115, 3}; //default smile top right
+const uint8_t default_SmileTL[] = {8, 3, 115, 115, 6, 12, 28, 240, 224}; //default smile top left
+const uint8_t default_SmileBR[] = {8, 7, 15, 56, 51, 103, 206, 204, 204}; //default smile Bottom right
+const uint8_t default_SmileBL[] = {8, 204, 204, 206, 103, 51, 56, 15, 7}; //default smile Bottom left
+//Talk mouth closed. The top half of the animation remains the same 
+const uint8_t TMC_SmileBR[] = {8, 7, 15, 56, 48, 102, 198, 198, 198, };
+const uint8_t TMC_SmileBL[] = {8, 198, 198, 198, 102, 48, 56, 15, 7};
+//Talk mouth open
+const uint8_t TMO_SmileBR[] = {8, 7, 15, 56, 48, 96, 198, 207, 207,};
+const uint8_t TMO_SmileBL[] = {8, 207, 207, 198, 96, 48, 56, 15, 7,};
+// Speech bubble
+const uint8_t SB_LEFT[] = {8, 0, 78, 127, 123, 49, 17, 17, 17,};
+const uint8_t SB_RIGHT[] = {8, 17, 17, 17, 27, 31, 14, 0, 0, };
+// !!!!!!!!!!!!!! END !!!!!!!!!!!!!!!!!!!!
+
+// Create structures
+typedef struct
+{
+  uint8_t spacing;  // character spacing
+  const char *msg;  // message to display
+} msgDef_t;
+
+//Create Animation and default frame
+msgDef_t IdleFace[] = 
+{
+  {0, "!#        $%"}
+};
+
+msgDef_t Animation[] = // Each line is a "frame" of animation
+ {
+  {0, "!#+-&/"},
+  {0, "!#+-=?"},
+};
+
+
+
+void setup() {
+  Serial.begin(9600);
+  myDisplay.begin();
+
+  //Add characters to be used in animation
+  // Default idle smile
+  myDisplay.addChar('!', default_SmileTR);
+  myDisplay.addChar('#', default_SmileTL);
+  myDisplay.addChar('$', default_SmileBR);
+  myDisplay.addChar('%', default_SmileBL);
+
+  //Talk Anim mouths
+  myDisplay.addChar('&', TMC_SmileBR);
+  myDisplay.addChar('/', TMC_SmileBL);
+  myDisplay.addChar('=', TMO_SmileBR);
+  myDisplay.addChar('?', TMO_SmileBL);
+  
+  //Text bubble
+  myDisplay.addChar('+', SB_LEFT);
+  myDisplay.addChar('-', SB_RIGHT);
+  
+  myDisplay.setIntensity(4);
+}
+
+void loop() {
+  // when characters arrive over the serial port...
+  if (Serial.available()) {
+    // wait a bit for the entire message to arrive
+    delay(100);
+    // read all the available characters
+    while (Serial.available() > 0) {
+      // display each character to the LCD
+      Serial.write(Serial.read());
+      delay(100);
+    }
+    SoundActivity = true;
+    delay(100);
+    Serial.print(SoundActivity);
+    delay(100);
+    if (myDisplay.displayAnimate()) {
+    while (SoundActivity == true){
+      for (i = 0; i <=8; i++){
+        myDisplay.setTextBuffer(Animation[n].msg);
+        myDisplay.setCharSpacing(Animation[n].spacing);
+        Serial.println(i);
+      }
+    } else {
+      drawShape();
+    } 
+    delay(100);
+    myDisplay.displayReset();
+    n = (n + 1) % MAX_STRINGS;
+   } 
+  }
+} //Loop end 
+
+// the shape drawn
+void drawShape() {
+  for (int i = 0; i <= 7; i++) {
+    mx.setRow(0, 0, i, Bdefault_SmileBR[i]);
+  }
+  delay(delay_t);
+  for (int i = 0; i <= 7; i++) {
+    mx.setRow(1, 1, i, Bdefault_SmileBL[i]);
+  }
+  delay(delay_t);
+  for (int i = 0; i <= 7; i++) {
+    mx.setRow(2, 2, i, Bdefault_Blank[i]);
+  }
+  delay(delay_t);
+  for (int i = 0; i <= 7; i++) {
+    mx.setRow(3, 3, i, Bdefault_Blank[i]);
+  } 
+  delay(delay_t); 
+  for (int i = 0; i <= 7; i++) {
+    mx.setRow(4, 4, i, Bdefault_SmileTR[i]);
+  }
+  delay(delay_t);
+  for (int i = 0; i <= 7; i++) {
+    mx.setRow(5, 5, i, Bdefault_SmileTL[i]);
+  }
+  delay(delay_t);
+  for (int i = 0; i <= 7; i++) {
+    mx.setRow(6, 6, i, Bdefault_Blank[i]);
+  }
+  delay(delay_t);
+  for (int i = 0; i <= 7; i++) {
+    mx.setRow(7, 7, i, Bdefault_Blank[i]);
+  }
+  delay(delay_t); 
+}
