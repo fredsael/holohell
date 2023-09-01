@@ -7,10 +7,22 @@ void setup() {
 void loop() {
   int sensorValue = analogRead(soundSensorPin);  // Read the analog value from the sensor
   
+  Serial.println(sensorValue);
+
+
   if (sensorValue > 55) {
     Serial.println("Activity");
+    delay(2000);
+    Serial.println("Activity 2");
+    delay(1000);
+    Serial.println("Activity 3");
+    delay(1000);
+    Serial.println("Activity 4");
+    delay(1000);
+    Serial.println("Activity 5");
+    delay(1000);
     Serial.println(sensorValue);
   }
   
-  delay(20);  // Delay for 1 second before reading again
+  delay(50);  // Delay for 1 second before reading again
 }
